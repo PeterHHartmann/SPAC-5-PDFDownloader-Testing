@@ -378,3 +378,12 @@ data/Metadata2006_2016.xlsx
 /PDFDownloader/data/GRI_2017_2020 (1).xlsx
 /PDFDownloader/data/Metadata2006_2016.xlsx
 /PDFDownloader/data/PDFs
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
