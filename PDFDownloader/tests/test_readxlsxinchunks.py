@@ -9,7 +9,7 @@ from utils.xlsx_chunk_reader import read_xlsx_in_chunks
 class TestReadXlsxInChunks(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.test_data_dir="test_data"
+        cls.test_data_dir="tests/temp"
         os.mkdir(cls.test_data_dir)
         # Create multiple temporary Excel files for testing
         cls.test_files = [f"{cls.test_data_dir}/test1.xlsx", f"{cls.test_data_dir}/test2.xlsx"]
@@ -23,12 +23,8 @@ class TestReadXlsxInChunks(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        # Remove test files after tests
-        shutil.rmtree(cls.test_data_dir)
-        # os.remove(cls.test_data_dir)
-        # for file in cls.test_files:
-        #     if os.path.exists(file):
-        #         os.remove(file)
+
+        shutil.rmtree(cls.test_data_dir) # Remove test files after tests
 
     def test_chunk_readers(self):
         chunk_size = 1000
@@ -52,14 +48,11 @@ class TestReadXlsxInChunks(unittest.TestCase):
             chunk_count = 0
             for chunk in reader:
                 chunk_count += 1
-
                 df = pd.concat([df, chunk])
-                # self.assertEqual(len(chunk), chunk_size if chunk_count < 5 else 1000)
-
                 if chunk_count >= 5:
                     break  # Avoid infinite loops
 
-        self.assertEqual(len(df.index), 10000) #Both test xlsx files are 5000 rows so the combined DataFrame's row count should be 1000
+        self.assertEqual(len(df.index), 10000) # Both test xlsx files are 5000 rows so the combined DataFrame's row count should be 1000
         
     def test_column_names(self):
 
@@ -89,28 +82,27 @@ class TestReadXlsxInChunks(unittest.TestCase):
         os.remove(empty_file)
 
     @patch("logging.getLogger")
-    def test_shorter_file(self, mock_logger):
+    def test_end_of_file_reached(self, mock_logger):
         logger_instance = MagicMock()
         mock_logger.return_value = logger_instance
         short_file = f"{self.test_data_dir}/short.xlsx"
         wb = Workbook()
         ws = wb.active
-        for i in range(1, 4501):  # Add 4500 rows of data
-            ws.append([i, i*2, i*3, i*4])
-
+        ws.append(["X", "Y", "Z"])
+        ws.append([1, 2, 3])
+        wb.save(short_file)
 
         chunk_size = 1000
-        chunk_readers = [read_xlsx_in_chunks(path, chunk_size=chunk_size) for path in self.test_files]
+        reader = read_xlsx_in_chunks(short_file, chunk_size=chunk_size)
 
-        # TODO NOT WORKING
-
-        for reader in chunk_readers:
-            chunk_count = 0
-            for chunk in reader:
-                chunk_count += 1
-                if chunk_count > 5:
-                    logger_instance.debug.assert_called_with(f"Reached end of file '{short_file}', no more rows.")
-                    break  # Avoid infinite loops
+        chunk_count = 0
+        for chunk in reader:
+            chunk_count += 1
+            if chunk_count > 1:
+                break # Avoid infinite loops
+        logger_instance.debug.assert_called_with(f"Reached end of file '{short_file}', no more rows.")
+        
+        os.remove(short_file)
 
 
 
